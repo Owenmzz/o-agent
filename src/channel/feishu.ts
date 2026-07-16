@@ -186,15 +186,59 @@ export class FeishuChannel {
     };
   }
 
+  /**
+   * 将标准 Markdown 转换为飞书卡片支持的格式
+   * 飞书卡片 Markdown 是有限子集，需要转换不支持的语法
+   */
+  private convertMarkdownForFeishu(content: string): string {
+    let result = content;
+
+    // 1. 多行引用块合并（连续的 > 行）
+    //    > 第一行
+    //    > 第二行
+    //    → **「第一行\n第二行」**
+    result = result.replace(
+      /^(?:>\s*.+\n?)+/gm,
+      (match) => {
+        const lines = match
+          .split('\n')
+          .filter(line => line.trim())
+          .map(line => line.replace(/^>\s*/, ''))
+          .join('\n');
+        return `**「${lines}」**\n`;
+      }
+    );
+
+    // 2. 单行引用块（独立的 > 行，未被上面匹配）
+    //    > 引用内容  →  **「引用内容」**
+    result = result.replace(
+      /^>\s*(.+)$/gm,
+      '**「$1」**'
+    );
+
+    // 3. 图片语法 → 链接（飞书不支持 ![alt](url)）
+    //    ![图片描述](url)  →  [📷 图片描述](url)
+    result = result.replace(
+      /!\[([^\]]*)\]\(([^)]+)\)/g,
+      '[📷 $1]($2)'
+    );
+
+    // 4. 清理多余的空行（飞书卡片中空行会占用过多空间）
+    result = result.replace(/\n{3,}/g, '\n\n');
+
+    return result;
+  }
+
   /** 构建飞书交互卡片对象 */
   private buildCard(title: string, content: string): Record<string, unknown> {
+    const convertedContent = this.convertMarkdownForFeishu(content);
     return {
       config: { wide_screen_mode: true },
       header: {
         title: { tag: 'plain_text', content: title },
         template: 'turquoise',
       },
-      elements: [{ tag: 'markdown', content }],
+      elements: [{ tag: 'markdown', content: convertedContent }],
     };
   }
 
