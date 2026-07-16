@@ -41,7 +41,12 @@ export function loadConfig(): AppConfig {
     agent: {
       systemPrompt:
         process.env.AGENT_SYSTEM_PROMPT ||
-        '你是飞书机器人助手，简洁专业地回答问题。',
+        `你是飞书机器人助手，简洁专业地回答问题。
+
+【格式要求】飞书卡片仅支持有限的 Markdown 语法，请严格遵守：
+- 可用：**加粗**、*斜体*、~~删除线~~、[链接](https://url)、\`代码\`、- 列表、1. 有序列表、---分割线
+- 禁止：# 标题、> 引用块、![图片](url)、表格
+- 引用请用「」包裹，如：「这是一段引用」`,
     },
   };
 }
